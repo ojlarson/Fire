@@ -15,6 +15,9 @@ import dash_leaflet as dl
 import dash_leaflet.express as dlx
 from dash_extensions.javascript import assign
 import json
+from env import sqlPassword
+from shapely.geometry import shape
+
 
 def create_connection(db_name, db_user, db_password, db_host, db_port):
     connection = None
@@ -32,7 +35,7 @@ def create_connection(db_name, db_user, db_password, db_host, db_port):
     return connection
 
 connection = create_connection(
-    "gina", "dba", "9NbN9gjAFVwvSrs3V9PHeBMOS5AIOSZh", "pancake.x.gina.alaska.edu", "5432"
+    "gina", "dba", sqlPassword, "pancake.x.gina.alaska.edu", "5432"
 )
 connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
@@ -111,9 +114,9 @@ app.layout = html.Div(
                                     ),
                                 ],
                             ),
-                            #dl.FeatureGroup([
-                            #    dl.EditControl(id="edit_control")
-                            #])
+                            dl.FeatureGroup([
+                                dl.EditControl(id="edit_control")
+                            ])
                         ],
                         id="leaflet_map",
                         zoom=4,
@@ -207,9 +210,9 @@ def plot_points(start_date, end_date):
     Output("leaflet_map", "bounds"),
     Input("boroughs", "click_feature"))
 def map_click(feature):
-    print(feature)
     if feature is not None:
         return feature["bounds"]
+
 @app.callback(Output("firePoints", "children"), Input("firePoints", "click_feature"))
 def map_click(feature):
     if feature is not None:
@@ -222,14 +225,16 @@ def map_click(feature):
                 html.P(f"{str(latlon[0])[:8]}, {str(latlon[1])[:6]}")
             ])
         ])]
-@app.callback(Output("boroughs", "children"), Input("boroughs", "click_feature"))
+
+@app.callback(Output("boroughs", "children"), Input("boroughs", "hover_feature"))
 def map_hover(feature):
     print(feature)
     if feature is not None:
-        return [dl.Popup(children=f"{feature['properties']['CommunityN']}")]
-#@app.callback(Output("outPut", "children"), Input("edit_control", "geojson"))
-#def draw(gjson):
-#    return str(gjson)
+        return [dl.Tooltip(children=f"{feature['properties']['CommunityN']}")]
+
+@app.callback(Output("outPut", "children"), Input("edit_control", "geojson"))
+def draw(gjson):
+    return str(gjson)
 
 if __name__ == '__main__':
     app.run_server(debug=True)
